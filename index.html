@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DressShop — Flipkart-style Demo (12 products)</title>
+<style>
+  :root{
+    --flip-blue:#2874f0;
+    --muted:#6b7280;
+    --bg:#f4f6f8;
+    --card:#fff;
+    --maxw:1200px;
+  }
+  *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial}
+  body{margin:0;background:var(--bg);color:#0f1724}
+  a{color:inherit;text-decoration:none}
+
+  /* Topbar */
+  .topbar{background:var(--flip-blue);color:#fff;display:flex;align-items:center;gap:16px;padding:12px 18px;position:sticky;top:0;z-index:80}
+  .brand{display:flex;gap:12px;align-items:center}
+  .logo{background:#fff;color:var(--flip-blue);padding:8px 12px;border-radius:4px;font-weight:800}
+  .search{flex:1;display:flex;gap:8px;align-items:center}
+  .search input{flex:1;padding:10px;border-radius:6px;border:0;outline:none}
+  .search button{background:#fff;color:var(--flip-blue);padding:9px 12px;border-radius:6px;border:0;cursor:pointer}
+  .top-actions{display:flex;gap:8px;align-items:center}
+
+  .small{padding:8px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.18);background:transparent;color:#fff;cursor:pointer}
+
+  /* category bar */
+  .catbar{display:flex;gap:10px;padding:10px 18px;background:#fff;border-bottom:1px solid #e6eef6;overflow-x:auto}
+  .cat{padding:8px 12px;border-radius:6px;background:transparent;cursor:pointer;white-space:nowrap;font-weight:600;color:#333}
+  .cat.active{background:#eef6ff;border:1px solid #d6eaff;color:var(--flip-blue)}
+
+  /* layout */
+  .wrap{max-width:var(--maxw);margin:18px auto;padding:0 12px;display:grid;grid-template-columns:260px 1fr 340px;gap:16px}
+  .card{background:var(--card);padding:12px;border-radius:10px;border:1px solid #e6eef6}
+  .hero{height:220px;border-radius:8px;background-size:cover;background-position:center;display:flex;align-items:end;color:#fff;padding:14px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,.2)}
+
+  /* toolbar & grid */
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+
+  /* product card */
+  .product{background:#fff;border-radius:8px;padding:8px;border:1px solid #eef3f8;display:flex;flex-direction:column;min-height:380px}
+  .thumb{height:220px;border-radius:6px;background-size:cover;background-position:center}
+  .pmeta{padding:10px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .title{font-weight:700}
+  .meta{color:var(--muted);font-size:13px}
+  .price{color:var(--flip-blue);font-weight:800}
+  .actions{display:flex;gap:8px;margin-top:auto}
+  .btn{background:var(--flip-blue);color:#fff;padding:9px 12px;border-radius:6px;border:none;cursor:pointer}
+  .btn:active{transform:translateY(1px)}
+  .icon-btn{background:#fff;border:1px solid #eef3f8;padding:8px;border-radius:6px;cursor:pointer}
+
+  /* cart */
+  .cart-item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed #f1f5f9}
+  .cart-footer{margin-top:12px}
+
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;visibility:hidden;opacity:0;transition:.18s;z-index:100}
+  .modal.open{visibility:visible;opacity:1}
+  .modalbox{width:min(920px,96%);max-height:86vh;overflow:auto;background:#fff;border-radius:12px;padding:16px}
+
+  /* responsive */
+  @media (max-width:1100px){ .wrap{grid-template-columns:1fr 360px} .wrap .left{display:none} .grid{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:720px){ .wrap{grid-template-columns:1fr} .grid{grid-template-columns:1fr} .hero{height:160px} .topbar{padding:10px} .search input{padding:8px} }
+  .muted{color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">DS</div>
+      <div style="line-height:1">
+        <div style="font-weight:800">DressShop</div>
+        <div style="font-size:12px;opacity:.9">Demo — local images</div>
+      </div>
+    </div>
+
+    <div class="search" role="search">
+      <input id="searchInput" placeholder="Search for products, brands and more" aria-label="search">
+      <button id="searchBtn">Search</button>
+    </div>
+
+    <div class="top-actions">
+      <button class="small" id="signinBtn">Sign in</button>
+      <button class="small" id="wishBtn">Wishlist (<span id="wishCount">0</span>)</button>
+      <button class="small" id="cartBtn">Cart (<span id="cartCount">0</span>)</button>
+    </div>
+  </div>
+
+  <!-- CATEGORY BAR -->
+  <div class="catbar" id="catbar" role="navigation">
+    <div class="cat active" data-cat="all">All</div>
+    <div class="cat" data-cat="fashion">Fashion</div>
+    <div class="cat" data-cat="electronics">Electronics</div>
+    <div class="cat" data-cat="home">Home</div>
+    <div class="cat" data-cat="kitchen">Kitchen</div>
+    <div class="cat" data-cat="beauty">Beauty</div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="wrap">
+    <!-- LEFT -->
+    <aside class="card left">
+      <div id="hero" class="hero" style="background-image:url('images/Maxidress.jpg');">Trending</div>
+      <div style="margin-top:12px">
+        <h4 style="margin:0 0 8px 0">Quick picks</h4>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="small" onclick="filterCategory('fashion')">Fashion</button>
+          <button class="small" onclick="filterCategory('electronics')">Electronics</button>
+          <button class="small" onclick="filterCategory('home')">Home</button>
+          <button class="small" onclick="filterCategory('kitchen')">Kitchen</button>
+          <button class="small" onclick="filterCategory('beauty')">Beauty</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER -->
+    <main class="card" id="centerCol">
+      <div class="toolbar">
+        <div>
+          <strong id="resultsTitle">All Products</strong>
+          <div class="muted" id="resultsSub">Curated picks</div>
+        </div>
+        <div class="muted" id="resultCount"></div>
+      </div>
+
+      <!-- slider -->
+      <div id="slider" style="height:160px;border-radius:8px;overflow:hidden;margin-bottom:12px"></div>
+
+      <div class="grid" id="productGrid"></div>
+    </main>
+
+    <!-- RIGHT: CART -->
+    <aside class="card right">
+      <h3 style="margin-top:0">Your Cart</h3>
+      <div id="cartList" style="max-height:300px;overflow:auto;margin-top:8px"></div>
+      <div class="cart-footer">
+        <div style="display:flex;justify-content:space-between;margin-top:12px"><strong>Total</strong><strong id="cartTotal">₹0</strong></div>
+        <button class="btn" id="checkoutBtn" style="width:100%;margin-top:12px">Checkout</button>
+      </div>
+      <div id="orderMsg" style="margin-top:12px;color:#0b6623;font-weight:700"></div>
+    </aside>
+  </div>
+
+  <!-- AUTH MODAL -->
+  <div class="modal" id="authModal" aria-hidden="true">
+    <div class="modalbox">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 id="authTitle">Sign in</h3>
+        <button class="small" id="authClose">Close</button>
+      </div>
+      <div id="authBody" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- PRODUCT QUICK VIEW -->
+  <div class="modal" id="quickModal" aria-hidden="true">
+    <div class="modalbox" id="quickBox"></div>
+  </div>
+
+<script>
+/* -------------------------
+  Data: 12 products (local images)
+  Ensure images folder contains the filenames used below.
+  We use encodeURI when building image URLs so filenames with spaces work.
+-------------------------*/
+const PRODUCTS = [
+  {id:1,title:'Ethnic Dress',cat:'fashion',price:2199,img:'Ethnicdress.webp',desc:'Beautiful ethnic wear for festivities',rating:4.8},
+  {id:2,title:'Maxi Dress',cat:'fashion',price:1799,img:'Maxidress.jpg',desc:'Comfortable maxi dress for summers',rating:4.6},
+  {id:3,title:'Women Tops',cat:'fashion',price:899,img:'Womentops.webp',desc:'Trendy tops for everyday wear',rating:4.3},
+  {id:4,title:'T-Shirt',cat:'fashion',price:499,img:'T-shirt.webp',desc:'Casual cotton t-shirt',rating:4.2},
+  {id:5,title:'Hoodie',cat:'fashion',price:1299,img:'Hoodie.jpg',desc:'Warm hoodie for winters',rating:4.5},
+  {id:6,title:'Jeans',cat:'fashion',price:1399,img:'Jeans.webp',desc:'Stretchable denim jeans',rating:4.4},
+
+  {id:11,title:'Mobile Phone',cat:'electronics',price:12999,img:'Mobile.webp',desc:'Latest smartphone with good battery',rating:4.6},
+  {id:12,title:'Laptop',cat:'electronics',price:45999,img:'Laptop.jpg',desc:'Lightweight laptop for work & play',rating:4.7},
+  {id:13,title:'Gaming Laptop',cat:'electronics',price:89999,img:'GamingLaptop.webp',desc:'High performance gaming laptop',rating:4.8},
+  {id:14,title:'LED TV',cat:'electronics',price:34999,img:'TV.png',desc:'Smart LED TV with HDR',rating:4.5},
+
+  {id:21,title:'Sofa',cat:'home',price:22999,img:'Sofa.jpg',desc:'Comfortable 3-seater sofa',rating:4.4},
+  {id:22,title:'Bedsheet Set',cat:'home',price:2999,img:'BedSheets.jpg',desc:'Premium bedsheet set',rating:4.3},
+  // Additional items available in folder; mapped above to make 12+ items
+];
+
+/* localStorage keys */
+const LS = { CART:'flip_cart_v1', WISH:'flip_wish_v1', USER:'flip_user_v1' };
+
+/* state */
+let state = { products: PRODUCTS.slice(), cart: load(LS.CART)||{}, wish: load(LS.WISH)||[], user: load(LS.USER)||{name:'Guest', email:''} };
+
+/* dom refs */
+const productGrid = document.getElementById('productGrid');
+const cartListEl = document.getElementById('cartList');
+const cartTotalEl = document.getElementById('cartTotal');
+const wishCountEl = document.getElementById('wishCount');
+const cartCountSpan = document.getElementById('cartCount');
+
+/* init */
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('searchBtn').addEventListener('click', renderProducts);
+  document.getElementById('signinBtn').addEventListener('click', ()=> openAuth('signin'));
+  document.getElementById('authClose').addEventListener('click', closeAuth);
+  document.getElementById('wishBtn').addEventListener('click', renderWishlist);
+  document.getElementById('cartBtn').addEventListener('click', renderCartPage);
+  document.getElementById('checkoutBtn').addEventListener('click', renderCheckout);
+  document.getElementById('catbar').addEventListener('click', (e)=>{ const c=e.target.closest('.cat'); if(c){ document.querySelectorAll('.cat').forEach(x=>x.classList.remove('active')); c.classList.add('active'); filterCategory(c.dataset.cat); }});
+
+  startSlider();
+  renderProducts();
+  renderCart();
+  updateWishCount();
+  updateAuthButton();
+});
+
+/* storage helpers */
+function load(k){ try{ const r = localStorage.getItem(k); return r?JSON.parse(r):null; }catch(e){return null;} }
+function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+/* utilities */
+function encodeImg(filename){ return encodeURI('images/' + filename); }
+function escapeHTML(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* SLIDER: rotate a few chosen images (local) */
+const sliderImages = ['Maxidress.jpg','Ethnicdress.webp','Sofa.jpg','Laptop.jpg'];
+function startSlider(){
+  const el = document.getElementById('slider');
+  let i=0;
+  function show(){
+    const fname = sliderImages[i % sliderImages.length];
+    el.style.backgroundImage = `url('${encodeImg(fname)}')`;
+    el.style.backgroundSize='cover';
+    el.style.backgroundPosition='center';
+    i++;
+  }
+  show();
+  setInterval(show, 3500);
+}
+
+/* render products */
+function renderProducts(){
+  const q = (document.getElementById('searchInput').value||'').trim().toLowerCase();
+  const activeCat = document.querySelector('.cat.active')?.dataset.cat || 'all';
+  let list = state.products.filter(p=>{
+    if(activeCat!=='all' && p.cat !== activeCat) return false;
+    if(q && !(p.title + ' ' + p.desc).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  document.getElementById('resultCount').textContent = `${list.length} items`;
+  productGrid.innerHTML = '';
+  if(list.length===0){ productGrid.innerHTML = '<div style="padding:20px;color:var(--muted)">No products found</div>'; return; }
+  list.forEach(p=>{
+    const div = document.createElement('div'); div.className='product';
+    const imgUrl = encodeImg(p.img);
+    div.innerHTML = `
+      <div class="thumb" style="background-image:url('${imgUrl}')"></div>
+      <div class="pmeta">
+        <div class="title">${escapeHTML(p.title)}</div>
+        <div class="meta">${escapeHTML(p.cat)} · ★ ${p.rating}</div>
+        <div class="price">₹${p.price}</div>
+        <div class="actions">
+          <button class="icon-btn" onclick="quickView(${p.id})">Quick view</button>
+          <button class="btn" onclick="addToCart(${p.id})">Add to cart</button>
+          <button class="icon-btn" onclick="toggleWish(${p.id})">${state.wish.includes(p.id)?'♥':'♡'}</button>
+        </div>
+      </div>
+    `;
+    productGrid.appendChild(div);
+    // fallback image loader
+    const img = new Image(); img.onload = ()=>{}; img.onerror = ()=>{ div.querySelector('.thumb').style.backgroundImage = "url('https://via.placeholder.com/800x600?text=Image')"; }; img.src = imgUrl;
+  });
+}
+
+/* quickView modal */
+function quickView(id){
+  const p = state.products.find(x=>x.id===id); if(!p) return;
+  const img = encodeImg(p.img);
+  const box = document.getElementById('quickBox');
+  box.innerHTML = `
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div style="flex-shrink:0;width:420px"><img src="${img}" style="width:100%;height:320px;object-fit:cover;border-radius:8px" onerror="this.src='https://via.placeholder.com/800x600?text=Image'"/></div>
+      <div style="flex:1">
+        <h3>${escapeHTML(p.title)}</h3>
+        <div class="meta">${escapeHTML(p.cat)} · ★ ${p.rating}</div>
+        <p style="margin-top:10px">${escapeHTML(p.desc)}</p>
+        <div style="margin-top:12px;font-weight:800;color:var(--flip-blue)">₹${p.price}</div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn" onclick="addToCart(${p.id}); closeQuick()">Add to cart</button>
+          <button class="small" onclick="toggleWish(${p.id}); closeQuick()">Wishlist</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('quickModal').classList.add('open');
+}
+function closeQuick(){ document.getElementById('quickModal').classList.remove('open'); }
+document.getElementById('quickModal').addEventListener('click', e=>{ if(e.target === document.getElementById('quickModal')) closeQuick(); });
+
+/* CART functions */
+function addToCart(id, qty=1){
+  state.cart[id] = (state.cart[id] || 0) + qty;
+  save(LS.CART, state.cart);
+  renderCart();
+  showToast('Added to cart');
+}
+function changeQty(id, qty){
+  if(qty<=0) delete state.cart[id]; else state.cart[id]=qty;
+  save(LS.CART, state.cart);
+  renderCart();
+}
+function removeFromCart(id){ delete state.cart[id]; save(LS.CART, state.cart); renderCart(); }
+function renderCart(){
+  cartListEl.innerHTML = '';
+  const ids = Object.keys(state.cart).map(Number);
+  if(ids.length===0){ cartListEl.innerHTML = '<div style="color:var(--muted);padding:12px">Cart is empty</div>'; cartTotalEl.textContent='₹0'; cartCountSpan.textContent='0'; return; }
+  let total=0, count=0;
+  ids.forEach(id=>{
+    const p = state.products.find(x=>x.id===id);
+    const q = state.cart[id];
+    total += p.price*q; count += q;
+    const row = document.createElement('div'); row.className='cart-item';
+    row.innerHTML = `<div><div style="font-weight:700">${escapeHTML(p.title)}</div><div class="muted">₹${p.price} × ${q}</div></div><div style="text-align:right"><div style="font-weight:700">₹${p.price*q}</div><div style="margin-top:6px"><button class="small" onclick="changeQty(${id}, ${q-1})">-</button> <button class="small" onclick="changeQty(${id}, ${q+1})">+</button> <button class="small" onclick="removeFromCart(${id})">Remove</button></div></div>`;
+    cartListEl.appendChild(row);
+  });
+  cartTotalEl.textContent = '₹' + total;
+  cartCountSpan.textContent = count;
+}
+
+/* cart page in center */
+function renderCartPage(){
+  const center = document.getElementById('centerCol');
+  center.innerHTML = `<div style="padding:14px"><h2>Cart</h2><div id="cartPageArea" style="margin-top:12px"></div></div>`;
+  const area = document.getElementById('cartPageArea');
+  const ids = Object.keys(state.cart).map(Number);
+  if(ids.length===0){ area.innerHTML = '<div style="color:var(--muted);padding:12px">Cart is empty</div>'; return; }
+  let total=0;
+  ids.forEach(id=>{
+    const p = state.products.find(x=>x.id==id); const q = state.cart[id]; total += p.price*q;
+    const item = document.createElement('div'); item.className='product'; item.style.alignItems='center';
+    item.innerHTML = `<div class="thumb" style="background-image:url('${encodeImg(p.img)}');width:140px;height:100px"></div><div style="flex:1;padding:12px"><div style="font-weight:700">${escapeHTML(p.title)}</div><div class="muted">₹${p.price} × ${q}</div></div><div style="text-align:right;padding:8px"><div style="font-weight:700">₹${p.price*q}</div><div style="margin-top:6px"><button class="small" onclick="changeQty(${id}, ${q-1})">-</button> <button class="small" onclick="changeQty(${id}, ${q+1})">+</button></div></div>`;
+    area.appendChild(item);
+  });
+  const foot = document.createElement('div'); foot.style.marginTop='12px'; foot.innerHTML = `<div style="display:flex;justify-content:space-between"><strong>Total</strong><strong>₹${total}</strong></div><div style="margin-top:12px"><button class="btn" onclick="renderCheckout()">Proceed to Checkout</button></div>`;
+  area.appendChild(foot);
+}
+
+/* wishlist */
+function toggleWish(id){
+  const idx = state.wish.indexOf(id);
+  if(idx===-1) state.wish.push(id); else state.wish.splice(idx,1);
+  save(LS.WISH,state.wish); updateWishCount(); renderProducts();
+}
+function updateWishCount(){ wishCountEl.textContent = state.wish.length ? '('+state.wish.length+')' : '0'; }
+function renderWishlist(){
+  const center = document.getElementById('centerCol');
+  center.innerHTML = `<div style="padding:14px"><h2>Wishlist</h2><div id="wishArea" style="margin-top:12px"></div></div>`;
+  const area = document.getElementById('wishArea');
+  if(state.wish.length===0){ area.innerHTML = '<div style="color:var(--muted);padding:12px">No saved items</div>'; return; }
+  state.wish.forEach(id=>{
+    const p = state.products.find(x=>x.id===id);
+    const card = document.createElement('div'); card.className='product';
+    card.innerHTML = `<div class="thumb" style="background-image:url('${encodeImg(p.img)}');height:120px"></div><div class="pmeta"><div class="title">${escapeHTML(p.title)}</div><div class="muted">₹${p.price}</div><div class="actions"><button class="btn" onclick="addToCart(${p.id}); toggleWish(${p.id})">Add to cart</button><button class="small" onclick="toggleWish(${p.id})">Remove</button></div></div>`;
+    area.appendChild(card);
+  });
+}
+
+/* AUTH (frontend demo) */
+function openAuth(mode='signin'){
+  document.getElementById('authModal').classList.add('open');
+  if(mode==='signin'){
+    document.getElementById('authTitle').textContent='Sign in';
+    document.getElementById('authBody').innerHTML = `<div style="display:flex;flex-direction:column;gap:8px"><label>Email</label><input id="siEmail" type="email"/><label>Password</label><input id="siPass" type="password"/><div style="display:flex;gap:8px"><button class="btn" id="doSignIn">Sign in</button><button class="small" id="gotoSignUp">Sign up</button></div></div>`;
+    document.getElementById('doSignIn').addEventListener('click', doSignIn);
+    document.getElementById('gotoSignUp').addEventListener('click', ()=> openAuth('signup'));
+  } else {
+    document.getElementById('authTitle').textContent='Create account';
+    document.getElementById('authBody').innerHTML = `<div style="display:flex;flex-direction:column;gap:8px"><label>Name</label><input id="suName"/><label>Email</label><input id="suEmail" type="email"/><label>Password</label><input id="suPass" type="password"/><div style="display:flex;gap:8px"><button class="btn" id="doSignUp">Create</button><button class="small" id="gotoSignIn">Back</button></div></div>`;
+    document.getElementById('doSignUp').addEventListener('click', doSignUp);
+    document.getElementById('gotoSignIn').addEventListener('click', ()=> openAuth('signin'));
+  }
+}
+function closeAuth(){ document.getElementById('authModal').classList.remove('open'); }
+function doSignIn(){ const email=document.getElementById('siEmail').value.trim(); if(!email){ alert('Enter email'); return; } state.user={name:email.split('@')[0]||'User', email}; save(LS.USER,state.user); updateAuthButton(); closeAuth(); showToast('Signed in (demo)'); }
+function doSignUp(){ const name=document.getElementById('suName').value.trim()||'User'; const email=document.getElementById('suEmail').value.trim(); if(!email){ alert('Enter email'); return; } state.user={name,email}; save(LS.USER,state.user); updateAuthButton(); closeAuth(); showToast('Account created (demo)'); }
+function updateAuthButton(){ document.getElementById('signinBtn').textContent = state.user && state.user.email ? state.user.name : 'Sign in'; }
+
+/* Checkout */
+function renderCheckout(){
+  const ids = Object.keys(state.cart);
+  if(ids.length.length===0 && ids.length===0){ alert('Cart is empty'); return; }
+  const center = document.getElementById('centerCol');
+  center.innerHTML = `<div style="padding:14px"><h2>Checkout</h2><div style="display:flex;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:260px"><label>Name</label><input id="shipName" style="width:100%;padding:8px;margin-top:6px"/><label style="margin-top:8px;display:block">Email</label><input id="shipEmail" style="width:100%;padding:8px;margin-top:6px"/><label style="margin-top:8px;display:block">Address</label><textarea id="shipAddr" rows="4" style="width:100%;padding:8px;margin-top:6px"></textarea></div><div style="width:320px"><div style="background:#fafafa;padding:12px;border-radius:8px;border:1px solid #eef3f8"><h4>Order summary</h4><div id="orderSummary" style="margin-top:8px"></div><div style="display:flex;justify-content:space-between;margin-top:12px"><strong>Total</strong><strong id="checkoutTotal">₹0</strong></div><button class="btn" style="width:100%;margin-top:12px" id="placeOrderBtn">Place Order</button></div></div></div></div>`;
+  populateOrderSummary();
+  document.getElementById('placeOrderBtn').addEventListener('click', finalizeOrder);
+}
+function populateOrderSummary(){ const area=document.getElementById('orderSummary'); area.innerHTML=''; const ids=Object.keys(state.cart); let total=0; ids.forEach(id=>{ const p = state.products.find(x=>x.id==id); const q = state.cart[id]; total += p.price*q; const r=document.createElement('div'); r.style.display='flex'; r.style.justifyContent='space-between'; r.style.marginBottom='6px'; r.innerHTML = `<div>${escapeHTML(p.title)} <div style="font-size:12px;color:var(--muted)">× ${q}</div></div><div style="font-weight:700">₹${p.price*q}</div>`; area.appendChild(r); }); document.getElementById('checkoutTotal').textContent = '₹' + total; }
+function finalizeOrder(){ const name=document.getElementById('shipName').value.trim(); const email=document.getElementById('shipEmail').value.trim(); const addr=document.getElementById('shipAddr').value.trim(); if(!name||!email||!addr){ alert('Please fill name, email and address'); return; } const total = Object.keys(state.cart).reduce((s,id)=> s + state.products.find(p=>p.id==id).price * state.cart[id], 0); const order = {id:'ORD'+Date.now(), total, createdAt:new Date().toISOString()}; localStorage.setItem('last_order', JSON.stringify(order)); state.cart = {}; save(LS.CART,state.cart); renderCart(); document.getElementById('orderMsg').textContent = `Order placed — ${order.id} (₹${order.total})`; showToast('Order placed (demo)'); goHome(); }
+
+/* misc */
+function showToast(txt){ const el=document.createElement('div'); el.textContent=txt; el.style.position='fixed'; el.style.right='20px'; el.style.bottom='20px'; el.style.background='var(--flip-blue)'; el.style.color='#fff'; el.style.padding='10px 12px'; el.style.borderRadius='8px'; document.body.appendChild(el); setTimeout(()=>el.remove(),1400); }
+function goHome(){ document.querySelectorAll('.cat').forEach(x=>x.classList.remove('active')); document.querySelector('.cat[data-cat="all"]').classList.add('active'); renderProducts(); window.scrollTo({top:0,behavior:'smooth'}); }
+function filterCategory(cat){ document.querySelectorAll('.cat').forEach(x=>x.classList.toggle('active', x.dataset.cat===cat)); renderProducts(); }
+
+/* misc helpers & expose */
+window.addToCart = addToCart; window.toggleWish = toggleWish; window.quickView = quickView; window.renderCartPage = renderCartPage; window.renderProducts = renderProducts; window.renderWishlist = renderWishlist; window.renderCheckout = renderCheckout;
+
+/* initial render */
+renderProducts(); renderCart(); updateWishCount(); updateAuthButton();
+
+</script>
+</body>
+</html>
